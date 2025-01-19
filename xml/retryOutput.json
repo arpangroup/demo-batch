@@ -1,0 +1,4 @@
+[
+ {"userId":1,"username":"John Doe","email":"john@doe.com","amount":500.0},
+ {"userId":2,"username":"Bob Doe","email":"bob@doe.com","amount":600.0}
+]

@@ -1,0 +1,112 @@
+package com.arpan.demo_batch;
+
+import com.arpan.demo_batch.listener.MyJobExecutionListener;
+import com.arpan.demo_batch.exception.UserNotFoundException;
+import com.arpan.demo_batch.listener.CustomRetryListener;
+import com.arpan.demo_batch.model.Transaction;
+import com.arpan.demo_batch.utils.MockItemProcessor;
+import com.arpan.demo_batch.utils.MockItemReader;
+import com.arpan.demo_batch.utils.MockItemWriter;
+import org.springframework.batch.core.ExitStatus;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.listener.StepExecutionListenerSupport;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import javax.sql.DataSource;
+
+@TestConfiguration
+public class TestConfig {
+
+    @Bean
+    public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
+        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+        factory.setDataSource(dataSource);
+        factory.setTransactionManager(transactionManager);
+        factory.setDatabaseType("H2");
+        return factory.getObject();
+    }
+
+
+    @Bean
+    public Job retryBatchJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
+        return new JobBuilder("retryBatchJob", jobRepository)
+                .listener(new MyJobExecutionListener())
+                .start(retryStep(jobRepository, transactionManager))
+                .build();
+    }
+
+    @Bean
+    public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
+                return new StepBuilder("retryStep", jobRepository)
+                .<Transaction, Transaction>chunk(5, transactionManager)
+                .reader(mockItemReader())
+                .processor(mockItemProcessor())
+                .writer(mockItemWriter())
+                .faultTolerant()
+                .retry(UserNotFoundException.class)  // Retry on UserNotFoundException
+                .retryLimit(4)  // Retry Limit
+                /*.listener(new StepExecutionListenerSupport() {
+                    @Override
+                    public void beforeStep(StepExecution stepExecution) {
+                        // Initialize retry count in ExecutionContext
+                        stepExecution.getExecutionContext().putInt("retryCount", 0);
+                    }
+
+                    @Override
+                    public ExitStatus afterStep(StepExecution stepExecution) {
+                        // Log the final retry count
+                        int retryCount = stepExecution.getExecutionContext().getInt("retryCount", 0);
+                        System.out.println("Final Retry Count: " + retryCount);
+                        return super.afterStep(stepExecution);
+                    }
+                })*/
+                .listener(new CustomRetryListener())
+                .build();
+    }
+
+    @Bean
+    public ItemReader<Transaction> mockItemReader() throws Exception {
+        System.out.println("mockItemReader........");
+        return new MockItemReader();
+    }
+
+    @Bean
+    public ItemProcessor<Transaction, Transaction> mockItemProcessor() {
+        System.out.println("mockItemProcessor........");
+        return new MockItemProcessor();
+    }
+
+    @Bean
+    public ItemWriter<Transaction> mockItemWriter() {
+        System.out.println("mockItemWriter........");
+        return new MockItemWriter();
+    }
+
+
+
+
+   /* @Retryable(value = UserNotFoundException.class, maxAttempts = 3)
+    public void processTransaction(Transaction transaction) {
+        // Retry logic
+    }
+
+    @Recover
+    public void recover(UserNotFoundException e, Transaction transaction) {
+        // Recovery logic after retries are exhausted
+        System.out.println("Recovery logic after retries exhausted.");
+    }*/
+
+}
