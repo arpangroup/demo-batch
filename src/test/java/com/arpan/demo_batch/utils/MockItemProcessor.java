@@ -9,6 +9,7 @@ import org.springframework.batch.item.ItemProcessor;
 public class MockItemProcessor implements ItemProcessor<Transaction, Transaction> {
     @Override
     public Transaction process(Transaction item) throws UserNotFoundException {
+        log.info("Processing: {}", item);
         throw new UserNotFoundException("Processing failed");
 //        log.info("processing....{}", item);
 //        if (item == null) {

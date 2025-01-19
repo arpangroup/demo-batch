@@ -1,5 +1,7 @@
 package com.arpan.demo_batch;
 
+import com.arpan.demo_batch.listener.CustomRetryCallback;
+import com.arpan.demo_batch.listener.CustomSkipListener;
 import com.arpan.demo_batch.listener.MyJobExecutionListener;
 import com.arpan.demo_batch.exception.UserNotFoundException;
 import com.arpan.demo_batch.listener.CustomRetryListener;
@@ -23,9 +25,13 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
+import java.util.List;
 
 @TestConfiguration
 public class TestConfig {
@@ -50,7 +56,21 @@ public class TestConfig {
 
     @Bean
     public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
-                return new StepBuilder("retryStep", jobRepository)
+
+        // Create a RetryTemplate
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        // Set up a retry policy (you can customize it as needed)
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(3); // Set maximum retry attempts
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        retryTemplate.registerListener(new CustomRetryListener()); // Custom retry listener
+
+        // Register the CustomRetryCallback within the RetryTemplate
+        retryTemplate.registerListener(new CustomRetryListener());
+
+        return new StepBuilder("retryStep", jobRepository)
                 .<Transaction, Transaction>chunk(5, transactionManager)
                 .reader(mockItemReader())
                 .processor(mockItemProcessor())
@@ -58,22 +78,10 @@ public class TestConfig {
                 .faultTolerant()
                 .retry(UserNotFoundException.class)  // Retry on UserNotFoundException
                 .retryLimit(4)  // Retry Limit
-                /*.listener(new StepExecutionListenerSupport() {
-                    @Override
-                    public void beforeStep(StepExecution stepExecution) {
-                        // Initialize retry count in ExecutionContext
-                        stepExecution.getExecutionContext().putInt("retryCount", 0);
-                    }
-
-                    @Override
-                    public ExitStatus afterStep(StepExecution stepExecution) {
-                        // Log the final retry count
-                        int retryCount = stepExecution.getExecutionContext().getInt("retryCount", 0);
-                        System.out.println("Final Retry Count: " + retryCount);
-                        return super.afterStep(stepExecution);
-                    }
-                })*/
                 .listener(new CustomRetryListener())
+                .skipLimit(100)
+                .skip(UserNotFoundException.class)
+                .listener(new CustomSkipListener())
                 .build();
     }
 

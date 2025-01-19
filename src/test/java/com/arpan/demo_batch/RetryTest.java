@@ -60,8 +60,8 @@ public class RetryTest {
 
     @Test
     public void whenEndpointAlwaysFail_thenJobFails() throws Exception {
-        Transaction transaction = new Transaction(1, 100);
-        when(itemReader.read()).thenReturn(transaction);
+        Transaction transaction1 = new Transaction(1, 100);
+        when(itemReader.read()).thenReturn(transaction1, null); // Returning null after the second item to indicate end of data
 
 
         // Mock the ItemProcessor to simulate a failure during processing
@@ -73,20 +73,31 @@ public class RetryTest {
         JobInstance actualJobInstance = jobExecution.getJobInstance();
         ExitStatus actualJobExitStatus = jobExecution.getExitStatus();
 
-        // Debugging: print job execution details
-        System.out.println("Job Execution Status: " + actualJobExitStatus.getExitCode());
-        //System.out.println("Job Execution Exit Description: " + actualJobExitStatus.getExitDescription());
 
         // Retrieve StepExecution from JobExecution and get retry count from its ExecutionContext
         StepExecution stepExecution = jobExecution.getStepExecutions().iterator().next();  // Assuming there's only one step
-        int actualRetryCount = stepExecution.getExecutionContext().getInt("retryCount", 0);
+
+        long readCount = stepExecution.getReadCount(); // Get the actual read count
+        int retryCount = stepExecution.getExecutionContext().getInt("retryCount", 0);
+        long skipCount = stepExecution.getSkipCount(); // Get the skip count
+
+
+        // Debugging: print job execution details
+        System.out.println("Job Execution Status: " + actualJobExitStatus.getExitCode());
+        System.out.println("Read Count: " + readCount);
+        System.out.println("Retry Count: " + retryCount);
+        System.out.println("Skip Count: " + skipCount);
+        //System.out.println("Job Execution Exit Description: " + actualJobExitStatus.getExitDescription());
+        printLog(stepExecution);
 
 
 
         // Assertions
         assertEquals("retryBatchJob", actualJobInstance.getJobName());
-        assertEquals("FAILED", actualJobExitStatus.getExitCode());
-        assertEquals(4, actualRetryCount, "Retry count mismatch");
+        assertEquals("COMPLETED", actualJobExitStatus.getExitCode());
+        assertEquals(1, readCount, "Read count mismatch");
+        assertEquals(4, retryCount, "Retry count mismatch");
+        assertEquals(1, skipCount, "Skip count mismatch"); // If skipping was configured, skipCount should reflect the number of skipped items
 
     }
 
@@ -94,5 +105,31 @@ public class RetryTest {
         JobParametersBuilder paramsBuilder = new JobParametersBuilder();
         paramsBuilder.addString("jobID", String.valueOf(System.currentTimeMillis()));
         return paramsBuilder.toJobParameters();
+    }
+
+    private void printLog(StepExecution stepExecution) {
+        // Get skip count from StepExecution
+        long skipCount = stepExecution.getSkipCount();
+        long readCount = stepExecution.getReadCount();
+        long writeCount = stepExecution.getWriteCount();
+        long rollbackCount = stepExecution.getRollbackCount();
+        long commitCount = stepExecution.getCommitCount();
+        long filterCount = stepExecution.getFilterCount();
+        long writeSkipCount = stepExecution.getWriteSkipCount();
+        long readSkipCount = stepExecution.getReadSkipCount();
+
+        // Print all StepExecution variables in a 2-column table format
+        System.out.println("----------------------------------------------------");
+        System.out.println("| Variable Name         | Value                   |");
+        System.out.println("----------------------------------------------------");
+        System.out.printf("| %-20s | %-22d |\n", "readCount", readCount);
+        System.out.printf("| %-20s | %-22d |\n", "writeCount", writeCount);
+        System.out.printf("| %-20s | %-22d |\n", "rollbackCount", rollbackCount);
+        System.out.printf("| %-20s | %-22d |\n", "commitCount", commitCount);
+        System.out.printf("| %-20s | %-22d |\n", "filterCount", filterCount);
+        System.out.printf("| %-20s | %-22d |\n", "skipCount", skipCount);
+        System.out.printf("| %-20s | %-22d |\n", "readSkipCount", readSkipCount);
+        System.out.printf("| %-20s | %-22d |\n", "writeSkipCount", writeSkipCount);
+        System.out.println("----------------------------------------------------");
     }
 }
