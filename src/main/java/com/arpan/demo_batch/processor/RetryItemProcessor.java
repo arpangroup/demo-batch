@@ -22,8 +22,10 @@ public class RetryItemProcessor implements ItemProcessor<Transaction, Transactio
 
     @Override
     public Transaction process(Transaction transaction) throws UserNotFoundException {
-        log.info("Inside processor ....");
-        if (transaction == null) {
+        System.out.println(">>>>>>>>>>>>> Processing: " + transaction);
+        log.info("Processing: {}", transaction);
+        if (transaction.getUserId() == 2) {
+            System.err.println("Id " + transaction.getUserId() + " not found for processing");
             throw new UserNotFoundException("Item not found for processing");
         }
         User user = fetchMoreUserDetails(transaction.getUserId());

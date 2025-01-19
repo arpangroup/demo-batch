@@ -17,7 +17,7 @@ public class CustomJsonFileItemWriter<T> extends JsonFileItemWriter<T> {
 
     @Override
     public void write(Chunk<? extends T> items) throws Exception {
-        System.out.println("Writing items: " + items); // Debugging log
+        System.out.println("<<<<<<<<<<<<<<Writing items: " + items); // Debugging log
         super.write(items);
     }
 }

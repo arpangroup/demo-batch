@@ -9,7 +9,9 @@ import org.springframework.batch.item.ItemWriter;
 public class MockItemWriter implements ItemWriter<Transaction> {
     @Override
     public void write(Chunk<? extends Transaction> items) {
+        System.out.println(">>>>>>>>>>>> WRITING: " + items);
         log.info("writing....{}", items);
         // Simply do nothing for the test
+
     }
 }

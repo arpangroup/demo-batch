@@ -21,6 +21,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.annotation.Recover;
@@ -36,14 +37,19 @@ import java.util.List;
 @TestConfiguration
 public class TestConfig {
 
-    @Bean
+    @Autowired
+    JobRepository jobRepository;
+
+
+    /*@Bean
     public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
         factory.setDataSource(dataSource);
         factory.setTransactionManager(transactionManager);
         factory.setDatabaseType("H2");
         return factory.getObject();
-    }
+    }*/
+
 
 
     @Bean
@@ -58,17 +64,12 @@ public class TestConfig {
     public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
 
         // Create a RetryTemplate
-        RetryTemplate retryTemplate = new RetryTemplate();
-
-        // Set up a retry policy (you can customize it as needed)
+        /*RetryTemplate retryTemplate = new RetryTemplate();
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
         retryPolicy.setMaxAttempts(3); // Set maximum retry attempts
         retryTemplate.setRetryPolicy(retryPolicy);
-
-        retryTemplate.registerListener(new CustomRetryListener()); // Custom retry listener
-
-        // Register the CustomRetryCallback within the RetryTemplate
         retryTemplate.registerListener(new CustomRetryListener());
+        retryTemplate.registerListener(new CustomRetryListener());*/
 
         return new StepBuilder("retryStep", jobRepository)
                 .<Transaction, Transaction>chunk(5, transactionManager)

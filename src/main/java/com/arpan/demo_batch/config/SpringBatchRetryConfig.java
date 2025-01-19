@@ -1,6 +1,8 @@
 package com.arpan.demo_batch.config;
 
 import com.arpan.demo_batch.exception.UserNotFoundException;
+import com.arpan.demo_batch.listener.CustomRetryListener;
+import com.arpan.demo_batch.listener.CustomSkipListener;
 import com.arpan.demo_batch.listener.MyJobExecutionListener;
 import com.arpan.demo_batch.processor.RetryItemProcessor;
 import com.arpan.demo_batch.model.Transaction;
@@ -27,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
+import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.transaction.PlatformTransactionManager;
 import writer.CustomJsonFileItemWriter;
@@ -64,9 +67,12 @@ public class SpringBatchRetryConfig {
                 .processor(retryItemProcessor())
                 .writer(jsonFileItemWriter())
                 .faultTolerant()
+                .retry(UserNotFoundException.class) //DeadlockLoserDataAccessException
                 .retryLimit(3)
-                .retry(UserNotFoundException.class)
-                //.retry(DeadlockLoserDataAccessException.class)
+                .listener(new CustomRetryListener())
+                .skipLimit(100)
+                .skip(UserNotFoundException.class)
+                .listener(new CustomSkipListener())
                 .build();
     }
 

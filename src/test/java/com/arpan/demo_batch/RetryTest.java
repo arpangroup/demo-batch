@@ -2,7 +2,6 @@ package com.arpan.demo_batch;
 
 import com.arpan.demo_batch.exception.UserNotFoundException;
 import com.arpan.demo_batch.model.Transaction;
-import com.arpan.demo_batch.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -19,7 +18,6 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
