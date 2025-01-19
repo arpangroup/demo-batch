@@ -206,21 +206,6 @@ public class TestConfig {
         System.out.println("mockItemWriter........");
         return new MockItemWriter();
     }
-
-
-
-
-   /* @Retryable(value = UserNotFoundException.class, maxAttempts = 3)
-    public void processTransaction(Transaction transaction) {
-        // Retry logic
-    }
-
-    @Recover
-    public void recover(UserNotFoundException e, Transaction transaction) {
-        // Recovery logic after retries are exhausted
-        System.out.println("Recovery logic after retries exhausted.");
-    }*/
-
 }
 
 ````
