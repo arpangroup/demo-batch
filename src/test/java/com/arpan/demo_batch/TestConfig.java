@@ -24,6 +24,7 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -50,18 +51,33 @@ public class TestConfig {
         return factory.getObject();
     }*/
 
+    @Bean
+    public RetryPolicy retryPolicy() {
+        return new SimpleRetryPolicy(3); // Maximum 3 retries
+    }
+
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(3); // Max 3 retries
+
+        retryTemplate.setRetryPolicy(retryPolicy);
+        retryTemplate.registerListener(new CustomRetryListener());
+        return retryTemplate;
+    }
+
 
 
     @Bean
-    public Job retryBatchJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
+    public Job retryBatchJob(JobRepository jobRepository, PlatformTransactionManager transactionManager, RetryTemplate retryTemplate) throws Exception {
         return new JobBuilder("retryBatchJob", jobRepository)
                 .listener(new MyJobExecutionListener())
-                .start(retryStep(jobRepository, transactionManager))
+                .start(retryStep(jobRepository, transactionManager, retryTemplate))
                 .build();
     }
 
     @Bean
-    public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
+    public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager, RetryTemplate retryTemplate) throws Exception {
 
         // Create a RetryTemplate
         /*RetryTemplate retryTemplate = new RetryTemplate();
@@ -74,7 +90,12 @@ public class TestConfig {
         return new StepBuilder("retryStep", jobRepository)
                 .<Transaction, Transaction>chunk(5, transactionManager)
                 .reader(mockItemReader())
-                .processor(mockItemProcessor())
+                //.processor(mockItemProcessor())
+                .processor(item -> retryTemplate.execute(context -> {
+                    context.setAttribute("itemId", item.getUserId()); // Pass the item ID
+                    context.setAttribute("maxAttempts", 3);      // Max retry attempts
+                    return mockItemProcessor().process(item);
+                }))
                 .writer(mockItemWriter())
                 .faultTolerant()
                 .retry(UserNotFoundException.class)  // Retry on UserNotFoundException

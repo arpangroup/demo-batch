@@ -5,6 +5,55 @@ Enable Logs for SpringBatch
 logging.level.org.springframework.batch=DEBUG
 ````
 
+
+## 1. Wrapping RetryTemplate Inside StepBuilder
+Best For:
+- Jobs where retries are tightly coupled with the step logic.
+- Simplifying the ItemProcessor implementation by keeping retry logic outside.
+````java
+.processor(item -> retryTemplate.execute(context -> {
+    context.setAttribute("itemId", item.getUserId());
+    return mockItemProcessor().process(item);
+}))
+
+````
+## 2. Embedding RetryTemplate Inside the Processor Class
+Best For:
+- Jobs where retry logic is specific to the processor or is tightly coupled with its domain logic.
+- Scenarios where processors are reused across multiple steps or jobs with the same retry behavior.
+````java
+@Component
+public class RetryableItemProcessor implements ItemProcessor<Transaction, Transaction> {
+
+    private final RetryTemplate retryTemplate;
+
+    public RetryableItemProcessor(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
+
+    @Override
+    public Transaction process(Transaction item) throws Exception {
+        return retryTemplate.execute(context -> {
+            context.setAttribute("itemId", item.getUserId());
+            return actualProcess(item); // Call the actual processing logic
+        });
+    }
+
+    private Transaction actualProcess(Transaction item) throws UserNotFoundException {
+        // Actual processing logic that may throw exceptions
+        return item;
+    }
+}
+
+````
+In StepBuilder:
+````java
+.processor(retryableItemProcessor())
+````
+
+
+
+
 in `RetryTest.java`:
 ````java
 package com.arpan.demo_batch;

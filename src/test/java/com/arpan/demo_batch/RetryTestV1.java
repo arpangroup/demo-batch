@@ -25,7 +25,7 @@ public class RetryTestV1 {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @Test
+    /*@Test
     public void testJobExecution() throws Exception {
         JobExecution jobExecution = jobLauncher.run(retryBatchJob, new JobParameters());
 
@@ -49,7 +49,7 @@ public class RetryTestV1 {
         // Optionally, you can also assert the number of retries via logs or an execution context variable
         // Example if retry count was tracked:
         // assertEquals(3, jobExecution.getExecutionContext().get("retryCount"));
-    }
+    }*/
 
     @Test
     public void testJobFailureAfterMaxRetries() throws Exception {

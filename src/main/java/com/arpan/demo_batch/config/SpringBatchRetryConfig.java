@@ -31,6 +31,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import writer.CustomJsonFileItemWriter;
 
@@ -46,6 +48,16 @@ public class SpringBatchRetryConfig {
     @Value("file:output/retryOutput.json")
     private WritableResource outputXml;
 
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(3); // Max 3 retries
+
+        retryTemplate.setRetryPolicy(retryPolicy);
+        retryTemplate.registerListener(new CustomRetryListener());
+        return retryTemplate;
+    }
+
     @Bean(name = "retryBatchJob")
     public Job retryJob(JobRepository jobRepository, @Qualifier("retryStep") Step retryStep) {
         log.info("retryJob........");
@@ -59,12 +71,17 @@ public class SpringBatchRetryConfig {
 
 
     @Bean
-    public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
+    public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager, RetryTemplate retryTemplate) throws Exception {
         log.info("Starting retryStep.......");
         return new StepBuilder("retryStep", jobRepository)
                 .<Transaction, Transaction>chunk(5, transactionManager) // <I, O> represent the input & output types of the chunk processing
                 .reader(itemReader(inputCsv))
-                .processor(retryItemProcessor())
+                //.processor(retryItemProcessor())
+                .processor(item -> retryTemplate.execute(context -> {
+                    context.setAttribute("itemId", item.getUserId()); // Pass the item ID
+                    context.setAttribute("maxAttempts", 3);      // Max retry attempts
+                    return retryItemProcessor().process(item);
+                }))
                 .writer(jsonFileItemWriter())
                 .faultTolerant()
                 .retry(UserNotFoundException.class) //DeadlockLoserDataAccessException

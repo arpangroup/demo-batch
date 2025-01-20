@@ -1,7 +1,3 @@
 [
- {"userId":1,"username":"John Doe","email":"john@doe.com","amount":100.0},
- {"userId":3,"username":"Peter Higgs","email":"peter@higgs.com","amount":300.0},
- {"userId":4,"username":"Steve Jobs","email":"steve@jobs.com","amount":400.0},
- {"userId":5,"username":"Mark Zukerberg","email":"mark@zukerberg.com","amount":500.0},
- {"userId":6,"username":"Elon Musk","email":"elson@musk.com","amount":600.0}
+
 ]

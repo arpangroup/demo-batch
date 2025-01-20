@@ -19,13 +19,24 @@ public class CustomRetryListener implements RetryListener {
     @Override
     public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
         // Called after the last retry attempt
+        log.info("RETRY_COMPLETED.......");
+
+        Integer maxAttempt = (Integer) context.getAttribute("maxAttempts"); //"context.max-attempts"
+        boolean isExhausted = (boolean) context.getAttribute("context.exhausted");
+        Integer itemId = (Integer) context.getAttribute("itemId");
+        int retryCount = context.getRetryCount();
+        if (retryCount >= maxAttempt) {
+            log.info("Max retries reached. Storing status in DB.");
+            storeStatusInDB(context, throwable);
+        }
     }
 
     @Override
     public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
         // Log error details
-        System.err.println("Retry failed. Retry count: " + context.getRetryCount());
-        log.error("Retry failed. Retry count: {}", context.getRetryCount());
+        System.err.println("Retrying... attempt : " + context.getRetryCount());
+        Integer itemId = (Integer) context.getAttribute("itemId");
+        log.error("Retry failed. Retry count: {} for item: {}", context.getRetryCount(), itemId);
         log.error("Exception: {}", throwable.getMessage());
 
         // Get the retry item from the context (it is usually stored as an attribute in the context)
@@ -41,5 +52,11 @@ public class CustomRetryListener implements RetryListener {
         } else {
             System.err.println("StepExecution not available!");
         }
+    }
+
+    private void storeStatusInDB(RetryContext context, Throwable throwable) {
+        log.info("Inside storeStatusInDB....");
+        // Implement your logic to save failure status
+
     }
 }
