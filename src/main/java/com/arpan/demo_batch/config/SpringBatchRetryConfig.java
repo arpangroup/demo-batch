@@ -84,7 +84,7 @@ public class SpringBatchRetryConfig {
                 }))
                 .writer(jsonFileItemWriter())
                 .faultTolerant()
-                .retry(UserNotFoundException.class) //DeadlockLoserDataAccessException
+                .retry(UserNotFoundException.class) // Retry step-level exceptions
                 .retryLimit(3)
                 .listener(new CustomRetryListener())
                 .skipLimit(100)
@@ -133,7 +133,7 @@ public class SpringBatchRetryConfig {
                 .resource(outputXml)
                 .name("transactionJsonFileItemWriter")
                 .build();*/
-        return new CustomJsonFileItemWriter<>(outputXml, new JacksonJsonObjectMarshaller<>());
+        return new CustomJsonFileItemWriter<>(outputXml, new JacksonJsonObjectMarshaller<>(), retryTemplate());
     }
 
     public LineMapper<Transaction> lineMapper() {

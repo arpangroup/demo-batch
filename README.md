@@ -51,8 +51,86 @@ In StepBuilder:
 .processor(retryableItemProcessor())
 ````
 
+---
+
+## Updated Implementation Using Delegation
+Step 1: Create a NotificationService with Retry Logic
+````java
+@Slf4j
+public class NotificationService {
+
+    private final RetryTemplate retryTemplate;
+
+    public NotificationService(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
+
+    public void sendNotificationWithRetry(Transaction transaction) throws NotificationException {
+        retryTemplate.execute(context -> {
+            sendNotification(transaction);
+            return null; // Required by RetryTemplate
+        });
+    }
+
+    private void sendNotification(Transaction transaction) throws NotificationException {
+        if (transaction.getEmail() == null) {
+            log.error("Not able to send notification to userId: {}", transaction.getUserId());
+            throw new NotificationException("Not able to send notification to userId: " + transaction.getUserId() + " with no email");
+        } else {
+            log.info(">>>>>>>> Published notification to user: {}", transaction.getUserId());
+        }
+    }
+}
+````
+Step 2: Update the CustomJsonFileItemWriter to Use the Delegate
+````java
+@Slf4j
+public class CustomJsonFileItemWriter<T> extends JsonFileItemWriter<T> {
+
+    private final NotificationService notificationService;
+
+    public CustomJsonFileItemWriter(WritableResource resource, JsonObjectMarshaller<T> jsonObjectMarshaller, NotificationService notificationService) {
+        super(resource, jsonObjectMarshaller);
+        this.notificationService = notificationService;
+    }
+
+    @Override
+    public void write(Chunk<? extends T> items) throws Exception {
+        System.out.println("<<<<<<<<<<<<<<Writing items: " + items); // Debugging log
+
+        for (T item : items) {
+            notificationService.sendNotificationWithRetry((Transaction) item); // Delegate notification handling
+        }
+
+        super.write(items); // Write items to the file
+    }
+}
+
+````
+Example Configuration in StepBuilder:
+````java
+@Bean
+public Step retryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager, RetryTemplate retryTemplate) throws Exception {
+    NotificationService notificationService = new NotificationService(retryTemplate);
+
+    return new StepBuilder("retryStep", jobRepository)
+            .<Transaction, Transaction>chunk(5, transactionManager)
+            .reader(mockItemReader())
+            .processor(mockItemProcessor())
+            .writer(new CustomJsonFileItemWriter<>(
+                    new FileSystemResource("output.json"),
+                    new JacksonJsonObjectMarshaller<>(),
+                    notificationService
+            )) // Pass the NotificationService as delegate
+            .faultTolerant()
+            .retry(NotificationException.class) // Retry step-level exceptions if needed
+            .retryLimit(4)                      // Retry Limit
+            .build();
+}
+````
 
 
+---
 
 in `RetryTest.java`:
 ````java
