@@ -21,14 +21,19 @@ public class CustomRetryListener implements RetryListener {
         // Called after the last retry attempt
         log.info("RETRY_COMPLETED.......");
 
-        Integer maxAttempt = (Integer) context.getAttribute("maxAttempts"); //"context.max-attempts"
-        boolean isExhausted = (boolean) context.getAttribute("context.exhausted");
-        Integer itemId = (Integer) context.getAttribute("itemId");
+        Integer maxAttempt = (Integer) context.getAttribute("context.max-attempts");
+        Object object = (Integer) context.getAttribute("context.state");
+        boolean isClosed = (boolean) context.getAttribute("context.closed");
+
+       /* Integer itemId = (Integer) context.getAttribute("itemId");
+        System.out.println("MAX_ATTEMPT: " + maxAttempt);
+        System.out.println("isExhausted: " + isExhausted);
+        System.out.println("itemId: " + itemId);
         int retryCount = context.getRetryCount();
         if (retryCount >= maxAttempt) {
             log.info("Max retries reached. Storing status in DB.");
             storeStatusInDB(context, throwable);
-        }
+        }*/
     }
 
     @Override

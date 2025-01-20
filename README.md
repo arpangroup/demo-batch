@@ -5,6 +5,28 @@ Enable Logs for SpringBatch
 logging.level.org.springframework.batch=DEBUG
 ````
 
+````
+    @Override
+    public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+        // Called after the last retry attempt
+        log.info("RETRY_COMPLETED.......");
+
+        Integer maxAttempt = (Integer) context.getAttribute("context.max-attempts");
+        Object object = (Integer) context.getAttribute("context.state");
+        boolean isClosed = (boolean) context.getAttribute("context.closed");
+
+       /* Integer itemId = (Integer) context.getAttribute("itemId");
+        System.out.println("MAX_ATTEMPT: " + maxAttempt);
+        System.out.println("isExhausted: " + isExhausted);
+        System.out.println("itemId: " + itemId);
+        int retryCount = context.getRetryCount();
+        if (retryCount >= maxAttempt) {
+            log.info("Max retries reached. Storing status in DB.");
+            storeStatusInDB(context, throwable);
+        }*/
+    }
+````
+
 
 ## 1. Wrapping RetryTemplate Inside StepBuilder
 Best For:

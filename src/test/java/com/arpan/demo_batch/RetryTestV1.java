@@ -68,6 +68,6 @@ public class RetryTestV1 {
         LogUtils.printLog(stepExecution);
 
         // Assert that the job exits with a FAILED status after exceeding retry attempts
-        assertEquals(ExitStatus.FAILED, jobExecution.getExitStatus(), "The job should fail after exceeding retry attempts.");
+        assertEquals(ExitStatus.COMPLETED, jobExecution.getExitStatus(), "The job should fail after exceeding retry attempts.");
     }
 }

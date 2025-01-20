@@ -15,14 +15,22 @@ import java.util.List;
 
 @Slf4j
 public class CustomJsonFileItemWriter<T> extends JsonFileItemWriter<T> {
-    private final RetryTemplate retryTemplate;
+//    private final RetryTemplate retryTemplate;
 
-    public CustomJsonFileItemWriter(WritableResource resource, JsonObjectMarshaller<T> jsonObjectMarshaller, RetryTemplate retryTemplate) {
+    public CustomJsonFileItemWriter(WritableResource resource, JsonObjectMarshaller<T> jsonObjectMarshaller) {
         super(resource, jsonObjectMarshaller);
-        this.retryTemplate = retryTemplate;
     }
 
     @Override
+    public void write(Chunk<? extends T> items) throws Exception {
+        System.out.println("<<<<<<<<<<<<<<Writing items: " + items); // Debugging log
+        for (T item : items) {
+            sendNotification((Transaction) item);
+        }
+        super.write(items);
+    }
+
+    /*@Override
     public void write(Chunk<? extends T> items) throws Exception {
         System.out.println("<<<<<<<<<<<<<<Writing items: " + items); // Debugging log
         for (T item : items) {
@@ -37,7 +45,7 @@ public class CustomJsonFileItemWriter<T> extends JsonFileItemWriter<T> {
             });
         }
         super.write(items);
-    }
+    }*/
 
     private void sendNotification(Transaction transaction) throws NotificationException {
         if (transaction.getEmail() == null) {
