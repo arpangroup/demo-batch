@@ -11,6 +11,14 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * Write Test cases using The actual Job:  <b>end-to-end integration testing</b>
+ * Annotation: @SpringBootTest
+ * Context: Loads the full Spring Boot application context, including all beans, configurations, and dependencies.
+ * Purpose: Tests the batch job in the context of the entire application.
+ * Dependencies:
+ *  - Job, JobLauncher, JobRepository, and PlatformTransactionManager are autowired directly from the application context.
+ */
 @SpringBootTest
 public class RetryTestV1 {
     @Autowired

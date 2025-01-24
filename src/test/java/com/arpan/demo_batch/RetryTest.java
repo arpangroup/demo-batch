@@ -24,6 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+
+/**
+ * Tests the batch job in isolation: <b>unit/integration testing o</b>
+ * We have Mocked the Job, Step, Reader, Writer everything
+ * Annotation: @SpringBatchTest
+ * Context: Focuses on batch-specific components and does not load the full application context.
+ * Purpose: Tests the batch job in isolation, with a lightweight context tailored for batch testing.
+ * Dependencies:
+ *      - Uses JobLauncherTestUtils for launching jobs.
+ *      - Mocks ItemReader and ItemProcessor to simulate specific behaviors.
+ */
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBatchTest
 @EnableAutoConfiguration
